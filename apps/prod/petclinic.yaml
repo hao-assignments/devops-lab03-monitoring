@@ -6,12 +6,12 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/hao-assignments/devops-lab02-kubernetes.git
+    repoURL: https://github.com/hao-assignments/devops-lab03-monitoring.git
     targetRevision: HEAD
     path: charts/petclinic
     helm:
       valueFiles:
-        - ../../environments/prod/values.yaml
+        - ../../environments/prod/petclinic-values.yaml
       parameters:
         - name: namespace
           value: petclinic-prod

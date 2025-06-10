@@ -1,0 +1,19 @@
+{{- if .Values.podMonitor.myApp.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: my-app
+  labels:
+    release: {{ .Values.prometheusReleaseLabel }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.podMonitor.myApp.selectorApp }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Values.podMonitor.myApp.namespace }}
+  podMetricsEndpoints:
+    - path: /actuator/prometheus
+      port: http
+      interval: 15s
+{{- end }}
