@@ -111,6 +111,8 @@ grafana:
   persistence:
     enabled: false
   adminPassword: admin
+  image:
+    tag: 9.5.5 # Upgrade to a stable recent version
   datasources:
     datasources.yaml:
       apiVersion: 1
@@ -152,31 +154,18 @@ grafana:
         revision: 3
         datasource: Prometheus
 
+# Replace loki-stack with separate loki and promtail
 loki:
   enabled: true
+  image:
+    tag: 2.9.10 # Upgrade to a more recent compatible version
   persistence:
     enabled: false
-  promtail:
-    enabled: true
-    config:
-      server:
-        http_listen_port: 3101
-      clients:
-        - url: http://loki-stack.petclinic-prod.svc.cluster.local:3100/loki/api/v1/push
-    readinessProbe:
-      httpGet:
-        path: /ready
-        port: 3101
-      initialDelaySeconds: 20
-      timeoutSeconds: 10
-      failureThreshold: 5
-      periodSeconds: 15
-    extraScrapeConfigs:
-      - job_name: kubernetes-pods
-        kubernetes_sd_configs:
-          - role: pod
-            namespaces:
-              names:
-                - petclinic-prod
-  grafana:
-    enabled: false
+
+promtail:
+  enabled: true
+  image:
+    tag: 2.9.10 # Match with Loki version
+  config:
+    clients:
+      - url: http://petclinic-prod-loki.petclinic-prod.svc.cluster.local:3100/loki/api/v1/push
