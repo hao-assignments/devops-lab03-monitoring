@@ -45,9 +45,3 @@ grafana:
 
 loki:
   enabled: true
-  service:
-    name: loki-stack # Add this to ensure correct service name
-  config:
-    clients:
-      - url: http://loki-stack.petclinic-prod.svc.cluster.local:3100/loki/api/v1/push
-  
