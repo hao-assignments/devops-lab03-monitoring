@@ -83,69 +83,26 @@ prometheus:
   server:
     persistentVolume:
       enabled: false
-    resources:
-      limits:
-        cpu: 1000m
-        memory: 1Gi
-      requests:
-        cpu: 100m
-        memory: 256Mi
-    securityContext:
-      runAsUser: 65534
-      runAsNonRoot: true
-      fsGroup: 65534
-    readinessProbeInitialDelay: 60
-    livenessProbeInitialDelay: 60
-    retention: "1d"
-    enableAdminApi: false
-    startupProbe:
-      httpGet:
-        path: /-/ready
-        port: 9090
-      failureThreshold: 30
-      periodSeconds: 10
-    extraFlags:
-      - web.enable-lifecycle
-      - storage.tsdb.no-lockfile
-  configmapReload:
-    prometheus:
-      enabled: true
   serverFiles:
     prometheus.yml:
-      global:
-        scrape_interval: 30s
-        evaluation_interval: 30s
-        scrape_timeout: 20s
       scrape_configs:
         - job_name: prometheus
           static_configs:
             - targets: ['localhost:9090']
         - job_name: api-gateway
           metrics_path: /actuator/prometheus
-          honor_exemplars: false
-          scrape_interval: 30s
-          scrape_timeout: 15s
           static_configs:
             - targets: ['api-gateway.petclinic-prod.svc.cluster.local:8080']
         - job_name: customers-service
           metrics_path: /actuator/prometheus
-          honor_exemplars: false
-          scrape_interval: 30s
-          scrape_timeout: 15s
           static_configs:
             - targets: ['customers-service.petclinic-prod.svc.cluster.local:8081']
         - job_name: visits-service
           metrics_path: /actuator/prometheus
-          honor_exemplars: false
-          scrape_interval: 30s
-          scrape_timeout: 15s
           static_configs:
             - targets: ['visits-service.petclinic-prod.svc.cluster.local:8082']
         - job_name: vets-service
           metrics_path: /actuator/prometheus
-          honor_exemplars: false
-          scrape_interval: 30s
-          scrape_timeout: 15s
           static_configs:
             - targets: ['vets-service.petclinic-prod.svc.cluster.local:8083']
 
@@ -192,18 +149,5 @@ loki:
     enabled: false
   promtail:
     enabled: true
-    config:
-      server:
-        http_listen_port: 3101
-      clients:
-        - url: http://loki-stack.petclinic-prod.svc.cluster.local:3100/loki/api/v1/push
-    readinessProbe:
-      httpGet:
-        path: /ready
-        port: 3101
-      initialDelaySeconds: 20
-      timeoutSeconds: 10
-      failureThreshold: 5
-      periodSeconds: 15
   grafana:
     enabled: false
