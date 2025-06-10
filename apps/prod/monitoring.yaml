@@ -1,47 +1,26 @@
-# apps/prod/monitoring.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: monitoring-stack-prod
+  name: prod-monitoring
   namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
-  destination:
-    namespace: monitoring # Namespace nơi bạn muốn cài đặt monitoring stack
-    server: https://kubernetes.default.svc
-  project: default # Hoặc project của bạn
+  project: default # Hoặc project ArgoCD dành cho PROD
   source:
-    repoURL: https://github.com/hao-assignments/devops-lab03-monitoring.git # Thay thế bằng repo của bạn
-    targetRevision: HEAD
-    path: charts/monitoring # Đường dẫn đến Helm chart tổng hợp monitoring
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    targetRevision: "57.0.0" # Đảm bảo phiên bản nhất quán giữa các môi trường nếu có thể
     helm:
-      values: |
-        # Bạn có thể override các values từ charts/monitoring/values.yaml tại đây
-        # Hoặc trỏ đến một file values cụ thể cho môi trường prod:
-        # valueFiles:
-        #   - environments/prod/monitoring-values.yaml
-        kube-prometheus-stack:
-          grafana:
-            ingress:
-              hosts:
-                - grafana.your-prod-domain.com
-            adminPassword: your-prod-secure-password
-          prometheus:
-            prometheusSpec:
-              storageSpec:
-                volumeClaimTemplate:
-                  spec:
-                    storageClassName: your-prod-storage-class
-                    resources:
-                      requests:
-                        storage: 100Gi
-        loki:
-          persistence:
-            storageClassName: your-prod-storage-class
-            size: 200Gi
-
+      # Sử dụng file values từ Git repo của bạn
+      valueFiles:
+        - https://github.com/hao-assignments/devops-lab03-monitoring.git/raw/main/environment/prod/monitoring-values.yaml
+  destination:
+    server: https://kubernetes.default.svc # Cluster PROD (nếu có nhiều cluster)
+    namespace: monitoring-prod # Namespace cho monitoring trên PROD
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
-      - CreateNamespace=true # Đảm bảo namespace monitoring được tạo
+      - CreateNamespace=true

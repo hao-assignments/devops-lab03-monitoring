@@ -1,34 +1,73 @@
 # charts/monitoring/values.yaml
 
+prometheus:
+  enabled: true # Bật Prometheus server
+  server:
+    # Cấu hình persistent storage cho Prometheus
+    persistentVolume:
+      enabled: true
+      storageClass: your-storage-class # Thay thế bằng StorageClass của bạn
+      size: 10Gi # Giảm kích thước xuống 10GB để tiết kiệm
+    # Cấu hình Service Discovery cho Prometheus
+    # (Để nó scrape các ServiceMonitor)
+    extraArgs:
+      web.enable-remote-write-receiver: true # Có thể cần cho một số trường hợp, nếu không thì bỏ qua
+    
+    # Cấu hình scrape_configs thủ công (thay thế ServiceMonitor nếu muốn đơn giản hơn nữa)
+    # Tuy nhiên, dùng ServiceMonitor vẫn tốt hơn cho Kubernetes.
+    # ruleSelector, serviceMonitorSelector, podMonitorSelector được hỗ trợ bởi Prometheus Operator
+    # Chart Prometheus Community riêng lẻ không đi kèm Operator, nên cấu hình scrape_configs trực tiếp
+    # hoặc dùng kube-prometheus-stack nếu bạn muốn dùng ServiceMonitor.
+    # Nếu bạn dùng chart "prometheus" riêng lẻ, bạn cần cấu hình scrape_configs trong server.
+    # Hoặc để đơn giản nhất cho đồ án, hãy *vẫn sử dụng kube-prometheus-stack* nhưng tắt mọi thứ!
+    
+    # === Quay lại sử dụng kube-prometheus-stack và tắt bớt ===
+    # Lý do: kube-prometheus-stack đã bao gồm Prometheus Operator và ServiceMonitor.
+    # Việc cấu hình scrape_configs thủ công cho từng service phức tạp hơn.
+    # Chúng ta chỉ cần tắt bớt các thành phần không cần thiết.
+
+# --- Cấu hình lại với kube-prometheus-stack (tinh gọn) ---
+# Tắt tất cả những gì không cần thiết
+
 kube-prometheus-stack:
-  # Cấu hình Prometheus
+  enabled: true
+
+  alertmanager:
+    enabled: false # Tắt Alertmanager nếu không dùng
+
   prometheus:
+    enabled: true
     prometheusSpec:
-      scrapeInterval: 30s
-      serviceMonitorSelector: {}
+      serviceMonitorSelector: {} # Để scrape tất cả ServiceMonitors
       serviceMonitorNamespaceSelector:
         matchNames:
-          - default
           - petclinic-prod # Namespace của PetClinic
-          - monitoring
+          - monitoring # Namespace của monitoring stack
+      scrapeInterval: 15s # Tần suất scrape
+      retention: 7d # Giữ dữ liệu 7 ngày (giảm để tiết kiệm disk)
       storageSpec:
         volumeClaimTemplate:
           spec:
-            storageClassName: your-storage-class
+            storageClassName: your-storage-class # Thay bằng StorageClass của bạn
             accessModes: ["ReadWriteOnce"]
             resources:
               requests:
-                storage: 50Gi
+                storage: 20Gi # Giảm xuống 20GB, đủ dùng cho đồ án
 
-  # Cấu hình Grafana
+  kubeStateMetrics:
+    enabled: false # Tắt Kube State Metrics
+
+  nodeExporter:
+    enabled: false # Tắt Node Exporter
+
   grafana:
     enabled: true
     ingress:
       enabled: true
       hosts:
-        - grafana.your-domain.com
-      className: nginx
-    adminPassword: your-secure-password
+        - grafana.your-domain.com # Thay bằng domain của bạn
+      className: nginx # Tên IngressClass (ví dụ: nginx)
+    adminPassword: your-secure-password # Thay bằng mật khẩu an toàn
     additionalDataSources:
       - name: Prometheus
         type: prometheus
@@ -40,20 +79,18 @@ kube-prometheus-stack:
         url: http://loki.monitoring.svc.cluster.local:3100
         access: proxy
 
-  # Cấu hình Node Exporter (nếu bạn muốn tinh chỉnh)
-  # Thường thì không cần thay đổi nếu không có yêu cầu đặc biệt
-  nodeExporter:
-    enabled: true # Đảm bảo Node Exporter được bật
-    serviceMonitor:
-      enabled: true # Đảm bảo ServiceMonitor cho Node Exporter được bật
-
-  # Cấu hình Alertmanager
-  alertmanager:
-    enabled: false
-
 loki:
   enabled: true
   persistence:
     enabled: true
-    storageClassName: your-storage-class
-    size: 100Gi
+    storageClassName: your-storage-class # Thay bằng StorageClass của bạn
+    size: 50Gi # Giảm xuống 50GB
+  
+promtail:
+  enabled: true
+  loki:
+    serviceName: loki
+    servicePort: 3100
+    # Đảm bảo promtail được triển khai trên tất cả các node để thu thập logs
+    # từ tất cả các Pods (bao gồm PetClinic)
+    # Bạn có thể cấu hình namespace selector nếu muốn giới hạn
