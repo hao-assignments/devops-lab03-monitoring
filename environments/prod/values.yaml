@@ -45,5 +45,3 @@ grafana:
 
 loki:
   enabled: true
-  service:
-    type: LoadBalancer
