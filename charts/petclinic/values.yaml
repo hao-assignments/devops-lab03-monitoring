@@ -92,19 +92,19 @@ prometheus:
         - job_name: api-gateway
           metrics_path: /actuator/prometheus
           static_configs:
-            - targets: ['api-gateway.petclinic-prod.svc.cluster.local:8080']
+            - targets: ['api-gateway.petclinic.svc.cluster.local:8080']
         - job_name: customers-service
           metrics_path: /actuator/prometheus
           static_configs:
-            - targets: ['customers-service.petclinic-prod.svc.cluster.local:8081']
+            - targets: ['customers-service.petclinic.svc.cluster.local:8081']
         - job_name: visits-service
           metrics_path: /actuator/prometheus
           static_configs:
-            - targets: ['visits-service.petclinic-prod.svc.cluster.local:8082']
+            - targets: ['visits-service.petclinic.svc.cluster.local:8082']
         - job_name: vets-service
           metrics_path: /actuator/prometheus
           static_configs:
-            - targets: ['vets-service.petclinic-prod.svc.cluster.local:8083']
+            - targets: ['vets-service.petclinic.svc.cluster.local:8083']
 
 grafana:
   enabled: true
@@ -117,12 +117,12 @@ grafana:
       datasources:
         - name: Prometheus
           type: prometheus
-          url: http://prometheus-server.petclinic-prod.svc.cluster.local
+          url: http://prometheus-server.petclinic.svc.cluster.local
           access: proxy
           isDefault: true
         - name: Loki
           type: loki
-          url: http://loki-stack.petclinic-prod.svc.cluster.local:3100
+          url: http://loki-stack.petclinic.svc.cluster.local:3100
           access: proxy
   dashboardProviders:
     dashboardproviders.yaml:
