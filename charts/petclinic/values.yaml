@@ -131,7 +131,10 @@ grafana:
           access: proxy
           jsonData:
             maxLines: 1000
+            httpMethod: GET
             timeout: 30
+            healthCheck:
+              query: '{job="petclinic"}'
           editable: true
   dashboardProviders:
     dashboardproviders.yaml:
@@ -156,13 +159,30 @@ loki:
   enabled: true
   persistence:
     enabled: false
+  service:
+    port: 3100
+    type: ClusterIP
   promtail:
     enabled: true
     config:
       server:
         http_listen_port: 3101
       clients:
-        - url: http://loki-stack.petclinic-prod.svc.cluster.local:3100/loki/api/v1/push
+        - url: http://petclinic-prod-loki.petclinic-prod.svc.cluster.local:3100/loki/api/v1/push
+      scrape_configs:
+        - job_name: kubernetes-pods
+          kubernetes_sd_configs:
+            - role: pod
+              namespaces:
+                names:
+                  - petclinic-prod
+          pipeline_stages:
+            - docker: {}
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_pod_label_app]
+              target_label: app
+            - source_labels: [__meta_kubernetes_namespace]
+              target_label: namespace
     readinessProbe:
       httpGet:
         path: /ready
@@ -171,12 +191,5 @@ loki:
       timeoutSeconds: 10
       failureThreshold: 5
       periodSeconds: 15
-    extraScrapeConfigs:
-      - job_name: kubernetes-pods
-        kubernetes_sd_configs:
-          - role: pod
-            namespaces:
-              names:
-                - petclinic-prod
   grafana:
     enabled: false
