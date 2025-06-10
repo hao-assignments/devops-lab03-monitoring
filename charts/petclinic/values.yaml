@@ -91,18 +91,22 @@ prometheus:
             - targets: ['localhost:9090']
         - job_name: api-gateway
           metrics_path: /actuator/prometheus
+          honor_exemplars: false
           static_configs:
             - targets: ['api-gateway.petclinic-prod.svc.cluster.local:8080']
         - job_name: customers-service
           metrics_path: /actuator/prometheus
+          honor_exemplars: false
           static_configs:
             - targets: ['customers-service.petclinic-prod.svc.cluster.local:8081']
         - job_name: visits-service
           metrics_path: /actuator/prometheus
+          honor_exemplars: false
           static_configs:
             - targets: ['visits-service.petclinic-prod.svc.cluster.local:8082']
         - job_name: vets-service
           metrics_path: /actuator/prometheus
+          honor_exemplars: false
           static_configs:
             - targets: ['vets-service.petclinic-prod.svc.cluster.local:8083']
 
