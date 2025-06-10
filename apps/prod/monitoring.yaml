@@ -14,7 +14,7 @@ spec:
     helm:
       # Sử dụng file values từ Git repo của bạn
       valueFiles:
-        - https://github.com/hao-assignments/devops-lab03-monitoring.git/raw/main/environment/prod/monitoring-values.yaml
+        - https://raw.githubusercontent.com/hao-assignments/devops-lab03-monitoring/refs/heads/main/environments/prod/monitoring-values.yaml
   destination:
     server: https://kubernetes.default.svc # Cluster PROD (nếu có nhiều cluster)
     namespace: monitoring-prod # Namespace cho monitoring trên PROD
