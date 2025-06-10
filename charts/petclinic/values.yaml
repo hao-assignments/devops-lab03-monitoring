@@ -134,8 +134,13 @@ grafana:
             httpMethod: GET
             timeout: 30
             healthCheck:
-              query: '{job="petclinic"}'
-          editable: true
+              query: 'count_over_time({namespace="petclinic-prod"}[1m])'  # Sử dụng namespace thay vì job
+            derivedFields:
+              - datasourceUid: 'P8E80F9AEF21F6940'  # Thay bằng UID thực tế của datasource Prometheus
+                matcherRegex: 'traceID=(\\w+)'
+                name: 'traceID'
+                url: '$${__value.raw}'
+          version: 1  # Chỉ định phiên bản datasource
   dashboardProviders:
     dashboardproviders.yaml:
       apiVersion: 1
@@ -162,6 +167,18 @@ loki:
   service:
     port: 3100
     type: ClusterIP
+  config:
+    auth_enabled: false
+    ingester:
+      lifecycler:
+        address: 0.0.0.0
+        ring:
+          kvstore:
+            store: inmemory
+          replication_factor: 1
+        final_sleep: 0s
+      chunk_idle_period: 5m
+      max_transfer_retries: 0
   promtail:
     enabled: true
     config:
@@ -178,11 +195,20 @@ loki:
                   - petclinic-prod
           pipeline_stages:
             - docker: {}
+            - match:
+                selector: '{namespace="petclinic-prod"}'
+                stages:
+                  - labels:
+                      namespace: ""
+                      app: ""
+                  - labelallow: ["namespace", "app"]
           relabel_configs:
             - source_labels: [__meta_kubernetes_pod_label_app]
               target_label: app
             - source_labels: [__meta_kubernetes_namespace]
               target_label: namespace
+            - action: labelmap
+              regex: __meta_kubernetes_pod_label_(.+)
     readinessProbe:
       httpGet:
         path: /ready
