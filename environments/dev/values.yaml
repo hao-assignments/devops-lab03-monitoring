@@ -1,0 +1,29 @@
+namespace: Petclinic
+
+config_server:
+  image: springcommunity/spring-petclinic-config-server:latest
+
+discovery_server:
+  image: springcommunity/spring-petclinic-discovery-server:latest
+
+customers_service:
+  image: springcommunity/spring-petclinic-customers-service:latest
+
+visits_service:
+  image: springcommunity/spring-petclinic-visits-service:latest
+
+vets_service:
+  image: springcommunity/spring-petclinic-vets-service:latest
+
+api_gateway:
+  image: springcommunity/spring-petclinic-api-gateway:latest
+
+tracing_server:
+  image: openzipkin/zipkin:latest
+  # serviceType: LoadBalancer 
+  # nodePort: 31411
+
+admin_server:
+  image: springcommunity/spring-petclinic-admin-server:latest
+  # serviceType: LoadBalancer 
+  # nodePort: 30090
