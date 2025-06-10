@@ -21,11 +21,10 @@ spec:
           ports:
             - containerPort: 9411
           resources:
-            limits:
-              memory: 512Mi
+            {{- toYaml .Values.tracing_server.resources | nindent 12 }}
           readinessProbe:
             httpGet:
-              path: /actuator/health
+              path: /health
               port: 9411
             initialDelaySeconds: 5
             periodSeconds: 5
@@ -42,10 +41,6 @@ spec:
     app: tracing-server
   ports:
     - protocol: TCP
-      port: 9411
+      port: {{ .Values.tracing_server.service.port }}
       targetPort: 9411
-      {{- if .Values.tracing_server.nodePort }}
-      nodePort: {{ .Values.tracing_server.nodePort }}
-      {{- end }}
-  # type: {{ .Values.tracing_server.serviceType | default "LoadBalancer" }}
-  type: LoadBalancer
+  type: {{ .Values.tracing_server.service.type }}

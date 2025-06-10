@@ -21,8 +21,7 @@ spec:
           ports:
             - containerPort: 8083
           resources:
-            limits:
-              memory: 512Mi
+            {{- toYaml .Values.vets_service.resources | nindent 12 }}
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: docker
@@ -67,5 +66,6 @@ spec:
     app: vets-service
   ports:
     - protocol: TCP
-      port: 8083
+      port: {{ .Values.vets_service.service.port }}
       targetPort: 8083
+  type: {{ .Values.vets_service.service.type }}

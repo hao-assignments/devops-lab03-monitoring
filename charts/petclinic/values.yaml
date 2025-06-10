@@ -1,0 +1,153 @@
+namespace: petclinic
+
+# Microservices configuration
+config_server:
+  image: springcommunity/spring-petclinic-config-server:latest
+  resources:
+    limits:
+      memory: 512Mi
+  service:
+    port: 8888
+    type: ClusterIP
+
+discovery_server:
+  image: springcommunity/spring-petclinic-discovery-server:latest
+  resources:
+    limits:
+      memory: 512Mi
+  service:
+    port: 8761
+    type: ClusterIP
+
+customers_service:
+  image: springcommunity/spring-petclinic-customers-service:latest
+  resources:
+    limits:
+      memory: 512Mi
+  service:
+    port: 8081
+    type: ClusterIP
+
+visits_service:
+  image: springcommunity/spring-petclinic-visits-service:latest
+  resources:
+    limits:
+      memory: 512Mi
+  service:
+    port: 8082
+    type: ClusterIP
+
+vets_service:
+  image: springcommunity/spring-petclinic-vets-service:latest
+  resources:
+    limits:
+      memory: 512Mi
+  service:
+    port: 8083
+    type: ClusterIP
+
+api_gateway:
+  image: springcommunity/spring-petclinic-api-gateway:latest
+  resources:
+    limits:
+      memory: 512Mi
+  service:
+    port: 8080
+    type: ClusterIP
+
+admin_server:
+  image: springcommunity/spring-petclinic-admin-server:latest
+  resources:
+    limits:
+      memory: 512Mi
+  service:
+    port: 9090
+    type: ClusterIP
+
+tracing_server:
+  image: openzipkin/zipkin:latest
+  resources:
+    limits:
+      memory: 512Mi
+  service:
+    port: 9411
+    type: ClusterIP
+
+# Monitoring configuration
+prometheus:
+  enabled: true
+  alertmanager:
+    enabled: false
+  pushgateway:
+    enabled: false
+  server:
+    persistentVolume:
+      enabled: false
+  serverFiles:
+    prometheus.yml:
+      scrape_configs:
+        - job_name: prometheus
+          static_configs:
+            - targets: ['localhost:9090']
+        - job_name: api-gateway
+          metrics_path: /actuator/prometheus
+          static_configs:
+            - targets: ['api-gateway.${namespace}.svc.cluster.local:8080']
+        - job_name: customers-service
+          metrics_path: /actuator/prometheus
+          static_configs:
+            - targets: ['customers-service.${namespace}.svc.cluster.local:8081']
+        - job_name: visits-service
+          metrics_path: /actuator/prometheus
+          static_configs:
+            - targets: ['visits-service.${namespace}.svc.cluster.local:8082']
+        - job_name: vets-service
+          metrics_path: /actuator/prometheus
+          static_configs:
+            - targets: ['vets-service.${namespace}.svc.cluster.local:8083']
+
+grafana:
+  enabled: true
+  persistence:
+    enabled: false
+  adminPassword: admin
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          url: http://prometheus-server.${namespace}.svc.cluster.local
+          access: proxy
+          isDefault: true
+        - name: Loki
+          type: loki
+          url: http://loki-stack.${namespace}.svc.cluster.local:3100
+          access: proxy
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: 'default'
+          orgId: 1
+          folder: ''
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+  dashboards:
+    default:
+      petclinic-dashboard:
+        gnetId: 6756
+        revision: 3
+        datasource: Prometheus
+
+loki:
+  enabled: true
+  persistence:
+    enabled: false
+  promtail:
+    enabled: true
+  grafana:
+    enabled: false

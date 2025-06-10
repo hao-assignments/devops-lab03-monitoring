@@ -1,6 +1,20 @@
 apiVersion: v2
 name: petclinic
-description: A Helm chart for the Spring Petclinic application based on original manifests
+description: A Helm chart for Spring Petclinic microservices with monitoring
 type: application
 version: 0.1.0
 appVersion: "2.7.0"
+
+dependencies:
+  - name: prometheus
+    version: 19.7.2
+    repository: https://prometheus-community.github.io/helm-charts
+    condition: prometheus.enabled
+  - name: grafana
+    version: 6.57.4
+    repository: https://grafana.github.io/helm-charts
+    condition: grafana.enabled
+  - name: loki-stack
+    version: 2.9.10
+    repository: https://grafana.github.io/helm-charts
+    condition: loki.enabled

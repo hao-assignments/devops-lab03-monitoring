@@ -11,10 +11,7 @@ spec:
     path: charts/petclinic
     helm:
       valueFiles:
-        - ../../environments/prod/petclinic-values.yaml
-      parameters:
-        - name: namespace
-          value: petclinic-prod
+        - ../../environments/prod/values.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: petclinic-prod

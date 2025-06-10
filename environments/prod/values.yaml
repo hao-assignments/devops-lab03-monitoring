@@ -1,5 +1,6 @@
-namespace: Petclinic
+namespace: petclinic-prod
 
+# Microservices configuration
 config_server:
   image: springcommunity/spring-petclinic-config-server:latest
 
@@ -17,13 +18,30 @@ vets_service:
 
 api_gateway:
   image: springcommunity/spring-petclinic-api-gateway:latest
+  service:
+    type: LoadBalancer
 
 tracing_server:
   image: openzipkin/zipkin:latest
-  # serviceType: LoadBalancer 
-  # nodePort: 31414
+  service:
+    type: LoadBalancer
 
 admin_server:
   image: springcommunity/spring-petclinic-admin-server:latest
-  # serviceType: LoadBalancer 
-  # nodePort: 30092
+  service:
+    type: LoadBalancer
+
+# Monitoring configuration
+prometheus:
+  enabled: true
+  server:
+    service:
+      type: LoadBalancer
+
+grafana:
+  enabled: true
+  service:
+    type: LoadBalancer
+
+loki:
+  enabled: true

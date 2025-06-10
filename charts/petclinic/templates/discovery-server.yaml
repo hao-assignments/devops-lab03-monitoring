@@ -21,15 +21,14 @@ spec:
           ports:
             - containerPort: 8761
           resources:
-            limits:
-              memory: 512Mi
+            {{- toYaml .Values.discovery_server.resources | nindent 12 }}
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: docker
             - name: EUREKA_INSTANCE_HOSTNAME
               valueFrom:
                 fieldRef:
-                  fieldPath: status.podIP # Use Pod IP as hostname
+                  fieldPath: status.podIP
             - name: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
               value: "*"
           readinessProbe:
@@ -51,5 +50,6 @@ spec:
     app: discovery-server
   ports:
     - protocol: TCP
-      port: 8761
+      port: {{ .Values.discovery_server.service.port }}
       targetPort: 8761
+  type: {{ .Values.discovery_server.service.type }}

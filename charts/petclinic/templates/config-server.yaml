@@ -21,8 +21,12 @@ spec:
           ports:
             - containerPort: 8888
           resources:
-            limits:
-              memory: 512Mi
+            {{- toYaml .Values.config_server.resources | nindent 12 }}
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: docker
+            - name: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
+              value: "*"
           readinessProbe:
             httpGet:
               path: /actuator/health
@@ -42,5 +46,6 @@ spec:
     app: config-server
   ports:
     - protocol: TCP
-      port: 8888
+      port: {{ .Values.config_server.service.port }}
       targetPort: 8888
+  type: {{ .Values.config_server.service.type }}

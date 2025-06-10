@@ -21,8 +21,7 @@ spec:
           ports:
             - containerPort: 9090
           resources:
-            limits:
-              memory: 512Mi
+            {{- toYaml .Values.admin_server.resources | nindent 12 }}
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: docker
@@ -33,7 +32,7 @@ spec:
             - name: EUREKA_INSTANCE_HOSTNAME
               valueFrom:
                 fieldRef:
-                  fieldPath: status.podIP # Use Pod IP as hostname
+                  fieldPath: status.podIP
             - name: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
               value: "*"
             - name: SPRING_CLOUD_DISCOVERY_HEALTH_TIMEOUT
@@ -67,9 +66,6 @@ spec:
     app: admin-server
   ports:
     - protocol: TCP
-      port: 9090
+      port: {{ .Values.admin_server.service.port }}
       targetPort: 9090
-      {{- if .Values.admin_server.nodePort }}
-      nodePort: {{ .Values.admin_server.nodePort }}
-      {{- end }}
-  # type: {{ .Values.admin_server.serviceType | default "LoadBalancer" }}
+  type: {{ .Values.admin_server.service.type }}
