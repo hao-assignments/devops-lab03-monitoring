@@ -18,18 +18,18 @@ vets_service:
 
 api_gateway:
   image: springcommunity/spring-petclinic-api-gateway:latest
-  service:
-    type: LoadBalancer
+  # service:
+  #   type: LoadBalancer
 
 tracing_server:
   image: openzipkin/zipkin:latest
-  service:
-    type: LoadBalancer
+  # service:
+  #   type: LoadBalancer
 
 admin_server:
   image: springcommunity/spring-petclinic-admin-server:latest
-  service:
-    type: LoadBalancer
+  # service:
+  #   type: LoadBalancer
 
 # Monitoring configuration
 prometheus:
@@ -45,3 +45,5 @@ grafana:
 
 loki:
   enabled: true
+  service:
+    type: LoadBalancer
