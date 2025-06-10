@@ -1,0 +1,59 @@
+# charts/monitoring/values.yaml
+
+kube-prometheus-stack:
+  # Cấu hình Prometheus
+  prometheus:
+    prometheusSpec:
+      scrapeInterval: 30s
+      serviceMonitorSelector: {}
+      serviceMonitorNamespaceSelector:
+        matchNames:
+          - default
+          - petclinic-prod # Namespace của PetClinic
+          - monitoring
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: your-storage-class
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 50Gi
+
+  # Cấu hình Grafana
+  grafana:
+    enabled: true
+    ingress:
+      enabled: true
+      hosts:
+        - grafana.your-domain.com
+      className: nginx
+    adminPassword: your-secure-password
+    additionalDataSources:
+      - name: Prometheus
+        type: prometheus
+        url: http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090
+        access: proxy
+        isDefault: true
+      - name: Loki
+        type: loki
+        url: http://loki.monitoring.svc.cluster.local:3100
+        access: proxy
+
+  # Cấu hình Node Exporter (nếu bạn muốn tinh chỉnh)
+  # Thường thì không cần thay đổi nếu không có yêu cầu đặc biệt
+  nodeExporter:
+    enabled: true # Đảm bảo Node Exporter được bật
+    serviceMonitor:
+      enabled: true # Đảm bảo ServiceMonitor cho Node Exporter được bật
+
+  # Cấu hình Alertmanager
+  alertmanager:
+    enabled: false
+
+loki:
+  enabled: true
+  persistence:
+    enabled: true
+    storageClassName: your-storage-class
+    size: 100Gi

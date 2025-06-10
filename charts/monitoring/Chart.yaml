@@ -1,4 +1,14 @@
+# charts/monitoring/Chart.yaml
 apiVersion: v2
-name: monitoring
-version: 0.1.0
-description: Custom ServiceMonitors for Prometheus to scrape Spring Boot apps
+name: monitoring-stack
+description: A Helm chart for deploying Prometheus, Grafana, and Loki
+version: 0.1.0 # Phiên bản của chart tổng hợp của bạn
+
+dependencies:
+  - name: kube-prometheus-stack
+    version: "58.1.0" # Kiểm tra phiên bản mới nhất trên Artifact Hub hoặc repo của chart
+    repository: "https://prometheus-community.github.io/helm-charts"
+  - name: loki
+    version: "5.45.0" # Kiểm tra phiên bản mới nhất
+    repository: "https://grafana.github.io/helm-charts"
+    condition: loki.enabled # Chỉ cài đặt Loki nếu loki.enabled là true trong values
