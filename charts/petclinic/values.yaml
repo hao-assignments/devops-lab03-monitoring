@@ -83,10 +83,6 @@ prometheus:
   server:
     persistentVolume:
       enabled: false
-    # Add these configuration parameters
-    extraFlags:
-      - web.enable-feature=exemplar-storage
-      - no-exemplars.for-metric=http_client_requests_seconds_count
   serverFiles:
     prometheus.yml:
       # Add global settings to control exemplar behavior
