@@ -7,11 +7,11 @@ spec:
   project: default
   source:
     repoURL: https://github.com/hao-assignments/devops-lab03-monitoring.git
-    targetRevision: main
+    targetRevision: HEAD
     path: charts/monitoring
     helm:
       valueFiles:
-        - ../../environment/prod/loki-values.yaml
+        - environments/prod/loki-values.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring

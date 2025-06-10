@@ -1,11 +1,12 @@
-prometheus:
-  prometheusSpec:
-    serviceMonitorSelector: {}
-    serviceMonitorNamespaceSelector: {}
-    podMonitorSelector: {}
-    podMonitorNamespaceSelector: {}
-    ruleSelector: {}
-    ruleNamespaceSelector: {}
-    scrapeInterval: 15s
-    evaluationInterval: 15s
-    retention: 7d
+prometheusReleaseLabel: prometheus
+
+serviceMonitor:
+  nodeExporter:
+    enabled: true
+
+podMonitor:
+  enabled: true
+  appName: api-gateway
+
+prometheusRule:
+  enabled: true

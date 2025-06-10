@@ -1,8 +1,15 @@
 adminUser: admin
-adminPassword: admin
-service:
-  type: ClusterIP
-ingress:
-  enabled: true
-  hosts:
-    - grafana.local
+adminPassword: prom-graph
+
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus.monitoring.svc.cluster.local:9090
+      - name: Loki
+        type: loki
+        access: proxy
+        url: http://loki.monitoring.svc.cluster.local:3100
