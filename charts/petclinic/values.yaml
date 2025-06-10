@@ -83,8 +83,17 @@ prometheus:
   server:
     persistentVolume:
       enabled: false
+    # Add these configuration parameters
+    extraFlags:
+      - web.enable-feature=exemplar-storage
+      - no-exemplars.for-metric=http_client_requests_seconds_count
   serverFiles:
     prometheus.yml:
+      # Add global settings to control exemplar behavior
+      global:
+        scrape_interval: 15s
+        evaluation_interval: 15s
+        exemplar_storage_max_samples: 10000
       scrape_configs:
         - job_name: prometheus
           static_configs:
