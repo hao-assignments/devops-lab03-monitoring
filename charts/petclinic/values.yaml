@@ -129,7 +129,7 @@ loki-stack:
             isDefault: true
           - name: Loki
             type: loki
-            url: http://petclinic-prod-loki-stack.petclinic-prod.svc.cluster.local:3100
+            url: http://petclinic-prod-loki.petclinic-prod.svc.cluster.local:3100
             access: proxy
     dashboardProviders:
       dashboardproviders.yaml:
