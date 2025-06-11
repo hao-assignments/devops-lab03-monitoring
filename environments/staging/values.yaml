@@ -45,7 +45,7 @@ services:
     image: springcommunity/spring-petclinic-api-gateway:latest
     containerPort: 8080
     port: 8080
-    serviceType: LoadBalancer
+    serviceType: ClusterIP
     useEureka: true
 
   admin-server:

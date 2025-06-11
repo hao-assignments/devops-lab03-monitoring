@@ -45,7 +45,7 @@ services:
     image: springcommunity/spring-petclinic-api-gateway:latest
     containerPort: 8080
     port: 8080
-    serviceType: ClusterIP
+    serviceType: LoadBalancer
     useEureka: true
 
   admin-server:
@@ -53,14 +53,14 @@ services:
     image: springcommunity/spring-petclinic-admin-server:latest
     containerPort: 9090
     port: 9090
-    serviceType: ClusterIP
+    serviceType: LoadBalancer
 
   tracing-server:
     enabled: true
     image: openzipkin/zipkin:latest
     containerPort: 9411
     port: 9411
-    serviceType: ClusterIP
+    serviceType: LoadBalancer
 
 # Monitoring configuration
 prometheus:

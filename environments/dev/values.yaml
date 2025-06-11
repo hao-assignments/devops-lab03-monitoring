@@ -45,7 +45,7 @@ services:
     image: springcommunity/spring-petclinic-api-gateway:latest
     containerPort: 8080
     port: 8080
-    serviceType: LoadBalancer
+    serviceType: ClusterIP
     useEureka: true
 
   admin-server:
@@ -67,7 +67,7 @@ prometheus:
   enabled: true
   server:
     service:
-      type: LoadBalancer
+      type: ClusterIP
   serverFiles:
     prometheus.yml:
       scrape_configs:
@@ -95,4 +95,4 @@ loki-stack:
   grafana:
     enabled: true
     service:
-      type: LoadBalancer
+      type: ClusterIP
