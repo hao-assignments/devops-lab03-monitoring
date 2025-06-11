@@ -1,4 +1,5 @@
-namespace: petclinic-prod
+# Namespace will be provided by environment-specific values
+namespace: ""
 
 # Microservices configuration
 config_server:
@@ -92,19 +93,19 @@ prometheus:
         - job_name: api-gateway
           metrics_path: /actuator/prometheus
           static_configs:
-            - targets: ['api-gateway.petclinic-prod.svc.cluster.local:8080']
+            - targets: ['api-gateway.{{ .Values.namespace }}.svc.cluster.local:8080']
         - job_name: customers-service
           metrics_path: /actuator/prometheus
           static_configs:
-            - targets: ['customers-service.petclinic-prod.svc.cluster.local:8081']
+            - targets: ['customers-service.{{ .Values.namespace }}.svc.cluster.local:8081']
         - job_name: visits-service
           metrics_path: /actuator/prometheus
           static_configs:
-            - targets: ['visits-service.petclinic-prod.svc.cluster.local:8082']
+            - targets: ['visits-service.{{ .Values.namespace }}.svc.cluster.local:8082']
         - job_name: vets-service
           metrics_path: /actuator/prometheus
           static_configs:
-            - targets: ['vets-service.petclinic-prod.svc.cluster.local:8083']
+            - targets: ['vets-service.{{ .Values.namespace }}.svc.cluster.local:8083']
 
 loki-stack:
   promtail:
@@ -122,7 +123,7 @@ loki-stack:
             source_labels: [__meta_kubernetes_pod_container_name]
             target_label: container
       clients:
-        - url: http://petclinic-prod-loki:3100/loki/api/v1/push
+        - url: http://{{ .Release.Name }}-loki-stack:3100/loki/api/v1/push
   loki:
     persistence:
       enabled: true
@@ -138,12 +139,12 @@ loki-stack:
         datasources:
           - name: Prometheus
             type: prometheus
-            url: http://petclinic-prod-prometheus-server.petclinic-prod.svc.cluster.local
+            url: http://{{ .Release.Name }}-prometheus-server
             access: proxy
             isDefault: true
           - name: Loki
             type: loki
-            url: http://petclinic-prod-loki.petclinic-prod.svc.cluster.local:3100
+            url: http://{{ .Release.Name }}-loki:3100
             access: proxy
     dashboardProviders:
       dashboardproviders.yaml:
