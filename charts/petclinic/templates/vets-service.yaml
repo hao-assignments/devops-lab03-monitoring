@@ -23,28 +23,12 @@ spec:
           resources:
             {{- toYaml .Values.vets_service.resources | nindent 12 }}
           env:
-            - name: SPRING_PROFILES_ACTIVE
-              value: docker
-            - name: SPRING_CLOUD_CONFIG_URI
-              value: http://config-server:8888
-            - name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-              value: http://discovery-server:8761/eureka
             - name: EUREKA_INSTANCE_HOSTNAME
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP # Use Pod IP as hostname
-            - name: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
-              value: "*"
-            - name: SPRING_CLOUD_DISCOVERY_HEALTH_TIMEOUT
-              value: "5000"
-            - name: SPRING_CLOUD_DISCOVERY_CLIENT_HEALTHINDICATOR_USE-DISCOVERY-METADATA
-              value: "true"
             - name: SPRING_CLOUD_DISCOVERY_CLIENT_HEALTHINDICATOR_MANAGEMENT_PORT
               value: "${management.server.port:${server.port}}"
-            - name: SPRING_CLOUD_DISCOVERY_HEALTH_RETRY_MAX_ATTEMPTS
-              value: "5"
-            - name: SPRING_CLOUD_DISCOVERY_HEALTH_RETRY_INITIAL_INTERVAL
-              value: "1000"
             - name: SPRING_CLOUD_DISCOVERY_CLIENT_HEALTHINDICATOR_MANAGEMENT_BASE_URL
               value: "http://${status.podIP}:${management.server.port:${server.port}}/actuator"
           readinessProbe:

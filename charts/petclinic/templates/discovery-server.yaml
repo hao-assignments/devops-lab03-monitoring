@@ -23,14 +23,10 @@ spec:
           resources:
             {{- toYaml .Values.discovery_server.resources | nindent 12 }}
           env:
-            - name: SPRING_PROFILES_ACTIVE
-              value: docker
             - name: EUREKA_INSTANCE_HOSTNAME
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-            - name: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
-              value: "*"
           readinessProbe:
             httpGet:
               path: /actuator/health
