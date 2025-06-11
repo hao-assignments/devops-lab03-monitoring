@@ -1,29 +1,66 @@
 namespace: petclinic-staging
 
-# Microservices configuration
-config_server:
-  image: springcommunity/spring-petclinic-config-server:latest
+services:
+  config-server:
+    enabled: true
+    image: springcommunity/spring-petclinic-config-server:latest
+    containerPort: 8888
+    port: 8888
+    serviceType: ClusterIP
 
-discovery_server:
-  image: springcommunity/spring-petclinic-discovery-server:latest
+  discovery-server:
+    enabled: true
+    image: springcommunity/spring-petclinic-discovery-server:latest
+    containerPort: 8761
+    port: 8761
+    serviceType: ClusterIP
+    useEureka: true
 
-customers_service:
-  image: springcommunity/spring-petclinic-customers-service:latest
+  customers-service:
+    enabled: true
+    image: springcommunity/spring-petclinic-customers-service:latest
+    containerPort: 8081
+    port: 8081
+    serviceType: ClusterIP
+    useEureka: true
 
-visits_service:
-  image: springcommunity/spring-petclinic-visits-service:latest
+  visits-service:
+    enabled: true
+    image: springcommunity/spring-petclinic-visits-service:latest
+    containerPort: 8082
+    port: 8082
+    serviceType: ClusterIP
+    useEureka: true
 
-vets_service:
-  image: springcommunity/spring-petclinic-vets-service:latest
+  vets-service:
+    enabled: true
+    image: springcommunity/spring-petclinic-vets-service:latest
+    containerPort: 8083
+    port: 8083
+    serviceType: ClusterIP
+    useEureka: true
 
-api_gateway:
-  image: springcommunity/spring-petclinic-api-gateway:latest
+  api-gateway:
+    enabled: true
+    image: springcommunity/spring-petclinic-api-gateway:latest
+    containerPort: 8080
+    port: 8080
+    serviceType: LoadBalancer
+    useEureka: true
 
-admin_server:
-  image: springcommunity/spring-petclinic-admin-server:latest
+  admin-server:
+    enabled: true
+    image: springcommunity/spring-petclinic-admin-server:latest
+    containerPort: 9090
+    port: 9090
+    serviceType: ClusterIP
 
-tracing_server:
-  image: openzipkin/zipkin:latest
+  tracing-server:
+    enabled: true
+    image: openzipkin/zipkin:latest
+    containerPort: 9411
+    port: 9411
+    serviceType: ClusterIP
 
 # Monitoring configuration
 prometheus:

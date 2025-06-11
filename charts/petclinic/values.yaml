@@ -1,78 +1,91 @@
 # Namespace will be provided by environment-specific values
 namespace: "petclinic-template"
 
-# Microservices configuration
-config_server:
-  image: springcommunity/spring-petclinic-config-server:latest
-  resources:
-    limits:
-      memory: 512Mi
-  service:
+# Define all services in a single structure
+services:
+  config-server:
+    enabled: true
+    image: springcommunity/spring-petclinic-config-server:latest
+    containerPort: 8888
     port: 8888
-    type: ClusterIP
+    serviceType: ClusterIP
+    resources:
+      limits:
+        memory: 512Mi
 
-discovery_server:
-  image: springcommunity/spring-petclinic-discovery-server:latest
-  resources:
-    limits:
-      memory: 512Mi
-  service:
+  discovery-server:
+    enabled: true
+    image: springcommunity/spring-petclinic-discovery-server:latest
+    containerPort: 8761
     port: 8761
-    type: ClusterIP
+    serviceType: ClusterIP
+    useEureka: true
+    resources:
+      limits:
+        memory: 512Mi
 
-customers_service:
-  image: springcommunity/spring-petclinic-customers-service:latest
-  resources:
-    limits:
-      memory: 512Mi
-  service:
+  customers-service:
+    enabled: true
+    image: springcommunity/spring-petclinic-customers-service:latest
+    containerPort: 8081
     port: 8081
-    type: ClusterIP
+    serviceType: ClusterIP
+    useEureka: true
+    resources:
+      limits:
+        memory: 512Mi
 
-visits_service:
-  image: springcommunity/spring-petclinic-visits-service:latest
-  resources:
-    limits:
-      memory: 512Mi
-  service:
+  visits-service:
+    enabled: true
+    image: springcommunity/spring-petclinic-visits-service:latest
+    containerPort: 8082
     port: 8082
-    type: ClusterIP
+    serviceType: ClusterIP
+    useEureka: true
+    resources:
+      limits:
+        memory: 512Mi
 
-vets_service:
-  image: springcommunity/spring-petclinic-vets-service:latest
-  resources:
-    limits:
-      memory: 512Mi
-  service:
+  vets-service:
+    enabled: true
+    image: springcommunity/spring-petclinic-vets-service:latest
+    containerPort: 8083
     port: 8083
-    type: ClusterIP
+    serviceType: ClusterIP
+    useEureka: true
+    resources:
+      limits:
+        memory: 512Mi
 
-api_gateway:
-  image: springcommunity/spring-petclinic-api-gateway:latest
-  resources:
-    limits:
-      memory: 512Mi
-  service:
+  api-gateway:
+    enabled: true
+    image: springcommunity/spring-petclinic-api-gateway:latest
+    containerPort: 8080
     port: 8080
-    type: ClusterIP
+    serviceType: ClusterIP
+    resources:
+      limits:
+        memory: 512Mi
 
-admin_server:
-  image: springcommunity/spring-petclinic-admin-server:latest
-  resources:
-    limits:
-      memory: 512Mi
-  service:
+  admin-server:
+    enabled: true
+    image: springcommunity/spring-petclinic-admin-server:latest
+    containerPort: 9090
     port: 9090
-    type: ClusterIP
+    serviceType: ClusterIP
+    resources:
+      limits:
+        memory: 512Mi
 
-tracing_server:
-  image: openzipkin/zipkin:latest
-  resources:
-    limits:
-      memory: 512Mi
-  service:
+  tracing-server:
+    enabled: true
+    image: openzipkin/zipkin:latest
+    containerPort: 9411
     port: 9411
-    type: ClusterIP
+    serviceType: ClusterIP
+    resources:
+      limits:
+        memory: 512Mi
 
 # Monitoring configuration
 prometheus:
