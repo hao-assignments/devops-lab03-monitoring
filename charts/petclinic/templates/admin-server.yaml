@@ -27,10 +27,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-            - name: SPRING_CLOUD_DISCOVERY_CLIENT_HEALTHINDICATOR_MANAGEMENT_PORT
-              value: "${management.server.port:${server.port}}"
-            - name: SPRING_CLOUD_DISCOVERY_CLIENT_HEALTHINDICATOR_MANAGEMENT_BASE_URL
-              value: "http://${status.podIP}:${management.server.port:${server.port}}/actuator"
           readinessProbe:
             httpGet:
               path: /actuator/health

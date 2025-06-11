@@ -26,11 +26,7 @@ spec:
             - name: EUREKA_INSTANCE_HOSTNAME
               valueFrom:
                 fieldRef:
-                  fieldPath: status.podIP # Use Pod IP as hostname
-            - name: SPRING_CLOUD_DISCOVERY_CLIENT_HEALTHINDICATOR_MANAGEMENT_PORT
-              value: "${management.server.port:${server.port}}"
-            - name: SPRING_CLOUD_DISCOVERY_CLIENT_HEALTHINDICATOR_MANAGEMENT_BASE_URL
-              value: "http://${status.podIP}:${management.server.port:${server.port}}/actuator"
+                  fieldPath: status.podIP
           readinessProbe:
             httpGet:
               path: /actuator/health
