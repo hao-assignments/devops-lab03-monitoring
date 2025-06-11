@@ -90,6 +90,21 @@ prometheus:
           metrics_path: /actuator/prometheus
           static_configs:
             - targets: ['vets-service.petclinic-staging.svc.cluster.local:8083']
+      rule_files:
+        - /etc/prometheus/rules/petclinic.rules.yml
+    rules:
+      petclinic.rules.yml: |-
+        groups:
+          - name: petclinic-alerts
+            rules:
+              - alert: High5xxRate
+                expr: increase(http_server_requests_seconds_count{status=~"5.."}[5m]) > 10
+                for: 1m
+                labels:
+                  severity: warning
+                annotations:
+                  summary: "High 5xx error rate"
+                  description: "More than 10 5xx requests in the last 5 minutes"
 
 loki-stack:
   grafana:
