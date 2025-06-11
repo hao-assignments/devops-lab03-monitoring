@@ -109,6 +109,20 @@ prometheus:
 loki-stack:
   promtail:
     enabled: true
+    config:
+      snippets:
+        extraRelabelConfigs:
+          - action: replace
+            sourceLabels: [__meta_kubernetes_pod_name]
+            targetLabel: pod
+          - action: replace
+            sourceLabels: [__meta_kubernetes_namespace]
+            targetLabel: namespace
+          - action: replace
+            sourceLabels: [__meta_kubernetes_pod_container_name]
+            targetLabel: container
+      clients:
+        - url: http://petclinic-prod-loki:3100/loki/api/v1/push
   loki:
     persistence:
       enabled: true
