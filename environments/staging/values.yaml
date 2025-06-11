@@ -31,14 +31,30 @@ prometheus:
   server:
     service:
       type: LoadBalancer
+  serverFiles:
+    prometheus.yml:
+      scrape_configs:
+        - job_name: prometheus
+          static_configs:
+            - targets: ['localhost:9090']
+        - job_name: api-gateway
+          metrics_path: /actuator/prometheus
+          static_configs:
+            - targets: ['api-gateway.petclinic-staging.svc.cluster.local:8080']
+        - job_name: customers-service
+          metrics_path: /actuator/prometheus
+          static_configs:
+            - targets: ['customers-service.petclinic-staging.svc.cluster.local:8081']
+        - job_name: visits-service
+          metrics_path: /actuator/prometheus
+          static_configs:
+            - targets: ['visits-service.petclinic-staging.svc.cluster.local:8082']
+        - job_name: vets-service
+          metrics_path: /actuator/prometheus
+          static_configs:
+            - targets: ['vets-service.petclinic-staging.svc.cluster.local:8083']
 
 loki-stack:
-  promtail:
-    enabled: true
-  loki:
-    persistence:
-      enabled: true
-      size: 3Gi
   grafana:
     enabled: true
     service:
