@@ -1,5 +1,5 @@
 # Namespace will be provided by environment-specific values
-namespace: ""
+namespace: "petclinic-template"
 
 # Microservices configuration
 config_server:
@@ -84,28 +84,6 @@ prometheus:
   server:
     persistentVolume:
       enabled: false
-  serverFiles:
-    prometheus.yml:
-      scrape_configs:
-        - job_name: prometheus
-          static_configs:
-            - targets: ['localhost:9090']
-        - job_name: api-gateway
-          metrics_path: /actuator/prometheus
-          static_configs:
-            - targets: ['api-gateway.{{ .Values.namespace }}.svc.cluster.local:8080']
-        - job_name: customers-service
-          metrics_path: /actuator/prometheus
-          static_configs:
-            - targets: ['customers-service.{{ .Values.namespace }}.svc.cluster.local:8081']
-        - job_name: visits-service
-          metrics_path: /actuator/prometheus
-          static_configs:
-            - targets: ['visits-service.{{ .Values.namespace }}.svc.cluster.local:8082']
-        - job_name: vets-service
-          metrics_path: /actuator/prometheus
-          static_configs:
-            - targets: ['vets-service.{{ .Values.namespace }}.svc.cluster.local:8083']
 
 loki-stack:
   promtail:
