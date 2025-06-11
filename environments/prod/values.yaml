@@ -42,3 +42,9 @@ grafana:
   enabled: true
   service:
     type: LoadBalancer
+
+loki:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 5Gi
