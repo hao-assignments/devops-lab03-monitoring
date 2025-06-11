@@ -10,10 +10,6 @@ dependencies:
     version: 27.20.0
     repository: https://prometheus-community.github.io/helm-charts
     condition: prometheus.enabled
-  - name: grafana
-    version: 6.21.5
-    repository: https://grafana.github.io/helm-charts
-    condition: grafana.enabled
   - name: loki-stack
     version: 2.9.10
     repository: https://grafana.github.io/helm-charts
