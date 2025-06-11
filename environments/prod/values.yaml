@@ -38,11 +38,7 @@ prometheus:
     service:
       type: LoadBalancer
 
-loki:
-  enabled: true
-  persistence:
-    enabled: true
-    size: 5Gi
+loki-stack:
   grafana:
     enabled: true
     service:
