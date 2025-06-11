@@ -28,9 +28,7 @@ spec:
           {{- if $service.useEureka }}
           env:
             - name: EUREKA_INSTANCE_HOSTNAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
+              value: {{ $name }}
           {{- end }}
           {{- with $service.env }}
           env:
