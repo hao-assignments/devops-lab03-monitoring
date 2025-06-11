@@ -125,22 +125,6 @@ grafana:
             queryTimeout: "30s"
             httpMethod: "GET"
           editable: true
-        - name: Loki
-          type: loki
-          url: http://petclinic-prod-loki.petclinic-prod.svc.cluster.local:3100
-          access: proxy
-          jsonData:
-            maxLines: 1000
-            httpMethod: GET
-            timeout: 30
-            healthCheck:
-              query: 'count_over_time({namespace="petclinic-prod"}[1m])'  # Sử dụng namespace thay vì job
-            derivedFields:
-              - datasourceUid: 'P8E80F9AEF21F6940'  # Thay bằng UID thực tế của datasource Prometheus
-                matcherRegex: 'traceID=(\\w+)'
-                name: 'traceID'
-                url: '$${__value.raw}'
-          version: 1  # Chỉ định phiên bản datasource
   dashboardProviders:
     dashboardproviders.yaml:
       apiVersion: 1
@@ -159,45 +143,3 @@ grafana:
         gnetId: 6756
         revision: 3
         datasource: Prometheus
-
-loki:
-  enabled: true
-  persistence:
-    enabled: true
-    size: 5Gi
-  service:
-    port: 3100
-    type: ClusterIP
-  promtail:
-    enabled: true
-    config:
-      server:
-        http_listen_port: 3101
-      clients:
-        - url: http://petclinic-prod-loki.petclinic-prod.svc.cluster.local:3100/loki/api/v1/push
-      scrape_configs:
-        - job_name: kubernetes-pods
-          kubernetes_sd_configs:
-            - role: pod
-              namespaces:
-                names:
-                  - petclinic-prod
-          pipeline_stages:
-            - docker: {}
-          relabel_configs:
-            - source_labels: [__meta_kubernetes_pod_label_app]
-              target_label: app
-            - source_labels: [__meta_kubernetes_namespace]
-              target_label: namespace
-            - action: labelmap
-              regex: __meta_kubernetes_pod_label_(.+)
-    readinessProbe:
-      httpGet:
-        path: /ready
-        port: 3101
-      initialDelaySeconds: 20
-      timeoutSeconds: 10
-      failureThreshold: 5
-      periodSeconds: 15
-  grafana:
-    enabled: false
