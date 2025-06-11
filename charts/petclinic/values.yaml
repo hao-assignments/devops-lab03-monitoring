@@ -101,7 +101,7 @@ loki-stack:
             source_labels: [__meta_kubernetes_pod_container_name]
             target_label: container
       clients:
-        - url: http://{{ .Release.Name }}-loki-stack:3100/loki/api/v1/push
+        - url: http://{{ .Release.Name }}-loki:3100/loki/api/v1/push
   loki:
     persistence:
       enabled: true
