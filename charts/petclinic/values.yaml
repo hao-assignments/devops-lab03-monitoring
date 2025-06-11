@@ -118,6 +118,8 @@ loki:
         - url: http://petclinic-prod-loki.petclinic-prod.svc.cluster.local:3100/loki/api/v1/push
   grafana:
     enabled: true
+    service:
+      type: LoadBalancer
     adminPassword: admin
     datasources:
       datasources.yaml:
