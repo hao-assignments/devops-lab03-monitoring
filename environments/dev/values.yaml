@@ -69,9 +69,16 @@ prometheus:
     service:
       type: ClusterIP
   alertmanager:
-    enabled: false
+    enabled: true
   serverFiles:
     prometheus.yml:
+      global:
+        scrape_interval: 15s
+        evaluation_interval: 15s
+        external_labels:
+          environment: 'dev'
+      rule_files:
+        - "alert_rules.yml"
       scrape_configs:
         - job_name: prometheus
           static_configs:
@@ -92,10 +99,22 @@ prometheus:
           metrics_path: /actuator/prometheus
           static_configs:
             - targets: ['vets-service.petclinic-dev.svc.cluster.local:8083']
-    alerts:
+    alert_rules.yml:
       groups:
         - name: petclinic-dev-alerts
           rules:
+            - alert: HighErrorRate
+              expr: increase(http_server_requests_seconds_count{status=~"4..|5.."}[30s]) > 10
+              for: 0s
+              labels:
+                severity: warning
+                environment: dev
+                service: "{{ $labels.job }}"
+              annotations:
+                summary: "High error rate detected in development"
+                description: "Service {{ $labels.job }} has more than 10 error requests in the last 30 seconds. Current count: {{ $value }}"
+                trace_query: 'http_server_requests_seconds_count{job="{{ $labels.job }}", status=~"4..|5.."}'
+                log_query: '{namespace="petclinic-dev", container="{{ $labels.job }}"} |~ "ERROR|WARN"'
             - alert: ServiceDown
               expr: up == 0
               for: 5m
@@ -105,6 +124,23 @@ prometheus:
               annotations:
                 summary: "Service is down in development"
                 description: "Service {{ $labels.job }} has been down for more than 5 minutes"
+  alertmanagerFiles:
+    alertmanager.yml:
+      global:
+        smtp_smarthost: 'localhost:587'
+        smtp_from: 'dev-alerts@petclinic.com'
+        resolve_timeout: 5m
+      route:
+        group_by: ['alertname', 'environment']
+        group_wait: 30s
+        group_interval: 5m
+        repeat_interval: 4h
+        receiver: 'dev-notifications'
+      receivers:
+        - name: 'dev-notifications'
+          webhook_configs:
+            - url: 'http://127.0.0.1:5001/'
+              send_resolved: true
 
 loki-stack:
   grafana:
@@ -118,11 +154,24 @@ loki-stack:
         datasources:
           - name: Prometheus
             type: prometheus
-            url: http://prometheus-server.petclinic-dev.svc.cluster.local
+            url: http://petclinic-dev-prometheus-server.petclinic-dev.svc.cluster.local
             access: proxy
+            isDefault: true
           - name: Loki
             type: loki
-            url: http://loki.petclinic-dev.svc.cluster.local:3100
+            url: http://petclinic-dev-loki.petclinic-dev.svc.cluster.local:3100
+            access: proxy
+            jsonData:
+              derivedFields:
+                - name: "Trace ID"
+                  matcherRegex: "trace_id=(\\w+)"
+                  url: "/explore?orgId=1&left=%5B%22now-1h%22,%22now%22,%22Loki%22,%7B%22expr%22:%22%7Btrace_id%3D%5C%22$${__value.raw}%5C%22%7D%22%7D%5D"
+                - name: "Request ID"
+                  matcherRegex: "request_id=(\\w+)"
+                  url: "/explore?orgId=1&left=%5B%22now-1h%22,%22now%22,%22Loki%22,%7B%22expr%22:%22%7Brequest_id%3D%5C%22$${__value.raw}%5C%22%7D%22%7D%5D"
+          - name: Jaeger
+            type: jaeger
+            url: http://tracing-server.petclinic-dev.svc.cluster.local:9411
             access: proxy
   loki:
     config:
@@ -141,7 +190,7 @@ loki-stack:
     enabled: true
     config:
       clients:
-        - url: http://loki.petclinic-dev.svc.cluster.local:3100/loki/api/v1/push
+        - url: http://petclinic-dev-loki.petclinic-dev.svc.cluster.local:3100/loki/api/v1/push
       scrape_configs:
         - job_name: kubernetes-pods
           kubernetes_sd_configs:
@@ -149,18 +198,35 @@ loki-stack:
               namespaces:
                 names: ['petclinic-dev']
           relabel_configs:
+            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+              action: keep
+              regex: true
             - source_labels: [__meta_kubernetes_pod_container_name]
               target_label: container
             - source_labels: [__meta_kubernetes_namespace]
               target_label: namespace
             - source_labels: [__meta_kubernetes_pod_name]
               target_label: pod
+            - source_labels: [__meta_kubernetes_pod_label_app]
+              target_label: service
           pipeline_stages:
             - match:
                 selector: '{container=~".*petclinic.*"}'
                 stages:
                   - regex:
-                      expression: '.*traceId=(?P<trace_id>[a-f0-9]+).*'
+                      expression: '.*(?:traceId|trace.id|X-Trace-Id)[:=]\s*(?P<trace_id>[a-f0-9]+).*'
+                  - regex:
+                      expression: '.*(?:spanId|span.id|X-Span-Id)[:=]\s*(?P<span_id>[a-f0-9]+).*'
+                  - regex:
+                      expression: '.*(?:requestId|request.id|X-Request-Id)[:=]\s*(?P<request_id>[a-zA-Z0-9\-]+).*'
+                  - regex:
+                      expression: '.*\s(?P<level>ERROR|WARN|INFO|DEBUG|TRACE)\s.*'
+                  - regex:
+                      expression: '.*status[:=]\s*(?P<status_code>[0-9]+).*'
                   - labels:
                       trace_id:
+                      span_id:
+                      request_id:
+                      level:
+                      status_code:
                       environment: dev

@@ -74,6 +74,13 @@ prometheus:
       type: LoadBalancer
   serverFiles:
     prometheus.yml:
+      global:
+        scrape_interval: 15s
+        evaluation_interval: 15s
+        external_labels:
+          environment: 'prod'
+      rule_files:
+        - "alert_rules.yml"
       scrape_configs:
         - job_name: prometheus
           static_configs:
@@ -94,42 +101,87 @@ prometheus:
           metrics_path: /actuator/prometheus
           static_configs:
             - targets: ['vets-service.petclinic-prod.svc.cluster.local:8083']
-    alerts:
+    alert_rules.yml:
       groups:
-        - name: petclinic-alerts
+        - name: petclinic-prod-alerts
           rules:
             - alert: HighErrorRate
               expr: increase(http_server_requests_seconds_count{status=~"4..|5.."}[30s]) > 10
               for: 0s
               labels:
                 severity: critical
+                environment: prod
                 service: "{{ $labels.job }}"
               annotations:
-                summary: "High error rate detected"
-                description: "Service {{ $labels.job }} has more than 10 error requests in the last 30 seconds"
+                summary: "CRITICAL: High error rate detected in production"
+                description: "Service {{ $labels.job }} has more than 10 error requests in the last 30 seconds. Current count: {{ $value }}"
+                trace_query: 'http_server_requests_seconds_count{job="{{ $labels.job }}", status=~"4..|5.."}'
+                log_query: '{namespace="petclinic-prod", container="{{ $labels.job }}"} |~ "ERROR|WARN"'
+                runbook_url: "https://runbooks.petclinic.com/alerts/high-error-rate"
             - alert: ServiceDown
               expr: up == 0
               for: 30s
               labels:
                 severity: critical
+                environment: prod
               annotations:
-                summary: "Service is down"
+                summary: "CRITICAL: Service is down in production"
                 description: "Service {{ $labels.job }} has been down for more than 30 seconds"
+                runbook_url: "https://runbooks.petclinic.com/alerts/service-down"
+            - alert: HighResponseTime
+              expr: histogram_quantile(0.95, rate(http_server_requests_seconds_bucket[5m])) > 1
+              for: 1m
+              labels:
+                severity: critical
+                environment: prod
+              annotations:
+                summary: "CRITICAL: High response time in production"
+                description: "95th percentile response time for {{ $labels.job }} is above 1 second ({{ $value }}s)"
+            - alert: HighMemoryUsage
+              expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) > 0.8
+              for: 5m
+              labels:
+                severity: warning
+                environment: prod
+              annotations:
+                summary: "High memory usage detected"
+                description: "Container {{ $labels.container }} is using more than 80% of its memory limit"
   alertmanagerFiles:
     alertmanager.yml:
       global:
         smtp_smarthost: 'localhost:587'
         smtp_from: 'alerts@petclinic.com'
+        resolve_timeout: 5m
       route:
-        group_by: ['alertname']
+        group_by: ['alertname', 'environment', 'service']
         group_wait: 10s
         group_interval: 10s
         repeat_interval: 1h
-        receiver: 'web.hook'
+        receiver: 'production-alerts'
+        routes:
+          - match:
+              severity: critical
+            receiver: 'critical-production-alerts'
+            group_wait: 5s
+            repeat_interval: 15m
+          - match:
+              severity: warning
+            receiver: 'warning-production-alerts'
       receivers:
-        - name: 'web.hook'
+        - name: 'production-alerts'
           webhook_configs:
             - url: 'http://127.0.0.1:5001/'
+              send_resolved: true
+        - name: 'critical-production-alerts'
+          webhook_configs:
+            - url: 'http://127.0.0.1:5001/critical'
+              send_resolved: true
+              title: 'PRODUCTION CRITICAL: {{ .GroupLabels.alertname }}'
+              text: '{{ range .Alerts }}{{ .Annotations.summary }}: {{ .Annotations.description }}{{ end }}'
+        - name: 'warning-production-alerts'
+          webhook_configs:
+            - url: 'http://127.0.0.1:5001/warning'
+              send_resolved: true
 
 loki-stack:
   grafana:
@@ -143,12 +195,21 @@ loki-stack:
         datasources:
           - name: Prometheus
             type: prometheus
-            url: http://prometheus-server.petclinic-prod.svc.cluster.local
+            url: http://petclinic-prod-prometheus-server.petclinic-prod.svc.cluster.local
             access: proxy
+            isDefault: true
           - name: Loki
             type: loki
-            url: http://loki.petclinic-prod.svc.cluster.local:3100
+            url: http://petclinic-prod-loki.petclinic-prod.svc.cluster.local:3100
             access: proxy
+            jsonData:
+              derivedFields:
+                - name: "Trace ID"
+                  matcherRegex: "trace_id=(\\w+)"
+                  url: "/explore?orgId=1&left=%5B%22now-1h%22,%22now%22,%22Loki%22,%7B%22expr%22:%22%7Btrace_id%3D%5C%22$${__value.raw}%5C%22%7D%22%7D%5D"
+                - name: "Request ID"
+                  matcherRegex: "request_id=(\\w+)"
+                  url: "/explore?orgId=1&left=%5B%22now-1h%22,%22now%22,%22Loki%22,%7B%22expr%22:%22%7Brequest_id%3D%5C%22$${__value.raw}%5C%22%7D%22%7D%5D"
           - name: Jaeger
             type: jaeger
             url: http://tracing-server.petclinic-prod.svc.cluster.local:9411
@@ -184,11 +245,13 @@ loki-stack:
     enabled: true
     config:
       clients:
-        - url: http://loki.petclinic-prod.svc.cluster.local:3100/loki/api/v1/push
+        - url: http://petclinic-prod-loki.petclinic-prod.svc.cluster.local:3100/loki/api/v1/push
       scrape_configs:
         - job_name: kubernetes-pods
           kubernetes_sd_configs:
             - role: pod
+              namespaces:
+                names: ['petclinic-prod']
           relabel_configs:
             - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
               action: keep
@@ -199,11 +262,40 @@ loki-stack:
               target_label: namespace
             - source_labels: [__meta_kubernetes_pod_name]
               target_label: pod
+            - source_labels: [__meta_kubernetes_pod_label_app]
+              target_label: service
+            - source_labels: [__meta_kubernetes_pod_label_version]
+              target_label: version
           pipeline_stages:
             - match:
                 selector: '{container=~".*petclinic.*"}'
                 stages:
                   - regex:
-                      expression: '.*traceId=(?P<trace_id>[a-f0-9]+).*'
+                      expression: '.*(?:traceId|trace.id|X-Trace-Id)[:=]\s*(?P<trace_id>[a-f0-9]+).*'
+                  - regex:
+                      expression: '.*(?:spanId|span.id|X-Span-Id)[:=]\s*(?P<span_id>[a-f0-9]+).*'
+                  - regex:
+                      expression: '.*(?:requestId|request.id|X-Request-Id)[:=]\s*(?P<request_id>[a-zA-Z0-9\-]+).*'
+                  - regex:
+                      expression: '.*(?:userId|user.id|X-User-Id)[:=]\s*(?P<user_id>[a-zA-Z0-9\-]+).*'
+                  - regex:
+                      expression: '.*(?:sessionId|session.id|X-Session-Id)[:=]\s*(?P<session_id>[a-zA-Z0-9\-]+).*'
+                  - regex:
+                      expression: '.*\s(?P<level>ERROR|WARN|INFO|DEBUG|TRACE)\s.*'
+                  - regex:
+                      expression: '.*status[:=]\s*(?P<status_code>[0-9]+).*'
+                  - regex:
+                      expression: '.*method[:=]\s*(?P<http_method>[A-Z]+).*'
+                  - regex:
+                      expression: '.*uri[:=]\s*(?P<uri>[^\s]+).*'
                   - labels:
                       trace_id:
+                      span_id:
+                      request_id:
+                      user_id:
+                      session_id:
+                      level:
+                      status_code:
+                      http_method:
+                      uri:
+                      environment: prod
