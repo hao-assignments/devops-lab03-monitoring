@@ -65,46 +65,54 @@ services:
 # Monitoring configuration
 prometheus:
   enabled: true
-  server:
-    service:
-      type: LoadBalancer
-  serverFiles:
-    prometheus.yml:
-      scrape_configs:
-        - job_name: prometheus
-          static_configs:
-            - targets: ['localhost:9090']
-        - job_name: api-gateway
-          metrics_path: /actuator/prometheus
-          static_configs:
-            - targets: ['api-gateway.petclinic-prod.svc.cluster.local:8080']
-        - job_name: customers-service
-          metrics_path: /actuator/prometheus
-          static_configs:
-            - targets: ['customers-service.petclinic-prod.svc.cluster.local:8081']
-        - job_name: visits-service
-          metrics_path: /actuator/prometheus
-          static_configs:
-            - targets: ['visits-service.petclinic-prod.svc.cluster.local:8082']
-        - job_name: vets-service
-          metrics_path: /actuator/prometheus
-          static_configs:
-            - targets: ['vets-service.petclinic-prod.svc.cluster.local:8083']
-      rule_files:
-        - /etc/prometheus/rules/petclinic.rules.yml
-    rules:
-      petclinic.rules.yml: |-
-        groups:
-          - name: petclinic-alerts
-            rules:
-              - alert: High5xxRate
-                expr: increase(http_server_requests_seconds_count{status=~"5.."}[5m]) > 10
-                for: 1m
-                labels:
-                  severity: warning
-                annotations:
-                  summary: "High 5xx error rate"
-                  description: "More than 10 5xx requests in the last 5 minutes"
+  prometheusSpec:
+    evaluationInterval: 15s
+    scrapeInterval: 15s
+    retention: "15d"
+    ruleSelectorNilUsesHelmValues: true
+
+  service:
+    type: LoadBalancer
+
+  additionalScrapeConfigs:
+    - job_name: prometheus
+      static_configs:
+        - targets: ['localhost:9090']
+
+    - job_name: api-gateway
+      metrics_path: /actuator/prometheus
+      static_configs:
+        - targets: ['api-gateway.petclinic-prod.svc.cluster.local:8080']
+
+    - job_name: customers-service
+      metrics_path: /actuator/prometheus
+      static_configs:
+        - targets: ['customers-service.petclinic-prod.svc.cluster.local:8081']
+
+    - job_name: visits-service
+      metrics_path: /actuator/prometheus
+      static_configs:
+        - targets: ['visits-service.petclinic-prod.svc.cluster.local:8082']
+
+    - job_name: vets-service
+      metrics_path: /actuator/prometheus
+      static_configs:
+        - targets: ['vets-service.petclinic-prod.svc.cluster.local:8083']
+
+  additionalPrometheusRulesMap:
+    petclinic-alerts:
+      groups:
+        - name: petclinic-alerts
+          rules:
+            - alert: High5xxRate
+              expr: increase(http_server_requests_seconds_count{status=~"5.."}[30s]) > 10
+              for: 0s
+              labels:
+                severity: warning
+              annotations:
+                summary: "High 5xx error rate"
+                description: "More than 10 5xx requests in the last 30 seconds"
+
 
 loki-stack:
   grafana:
