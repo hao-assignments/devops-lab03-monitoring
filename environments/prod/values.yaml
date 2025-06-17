@@ -101,7 +101,7 @@ prometheus:
         - name: petclinic-prod-alerts
           rules:
             - alert: HighErrorRate
-              expr: increase(http_server_requests_seconds_count{status=~"4..|5.."}[120s]) > 10
+              expr: increase(http_server_requests_seconds_count{status=~"4..|5.."}[30s]) > 10
               for: 0s
               labels:
                 severity: critical
@@ -200,11 +200,14 @@ loki-stack:
             jsonData:
               derivedFields:
                 - name: "Trace ID"
-                  matcherRegex: "trace_id=(\\w+)"
+                  matcherRegex: "\\[([a-f0-9\\-]+)\\]"  # Match [c79fda49-17945]
                   url: "/explore?orgId=1&left=%5B%22now-1h%22,%22now%22,%22Loki%22,%7B%22expr%22:%22%7Btrace_id%3D%5C%22$${__value.raw}%5C%22%7D%22%7D%5D"
-                - name: "Request ID"
+                - name: "Request ID" 
                   matcherRegex: "request_id=(\\w+)"
                   url: "/explore?orgId=1&left=%5B%22now-1h%22,%22now%22,%22Loki%22,%7B%22expr%22:%22%7Brequest_id%3D%5C%22$${__value.raw}%5C%22%7D%22%7D%5D"
+                - name: "Correlation"
+                  matcherRegex: "\\[([a-f0-9\\-]{8,})\\].*?500 Server Error"  # Match errors với trace ID
+                  url: "/explore?orgId=1&left=%5B%22now-1h%22,%22now%22,%22Loki%22,%7B%22expr%22:%22%7B%7D%20%7C~%20%5C%22$${__value.raw}%5C%22%22%7D%5D"
           - name: Zipkin
             type: zipkin
             url: http://tracing-server.petclinic-prod.svc.cluster.local:9411
@@ -255,29 +258,15 @@ loki-stack:
                 selector: '{container=~".*petclinic.*"}'
                 stages:
                   - regex:
-                      expression: '.*(?:traceId|trace.id|X-Trace-Id)[:=]\s*(?P<trace_id>[a-f0-9]+).*'
+                      expression: '.*\\[(?P<trace_id>[a-f0-9\\-]+)\\].*'  # Extract từ [xxx-xxx]
                   - regex:
-                      expression: '.*(?:spanId|span.id|X-Span-Id)[:=]\s*(?P<span_id>[a-f0-9]+).*'
+                      expression: '.*(?P<level>ERROR|WARN|INFO|DEBUG|TRACE)\\s.*'
                   - regex:
-                      expression: '.*(?:requestId|request.id|X-Request-Id)[:=]\s*(?P<request_id>[a-zA-Z0-9\-]+).*'
+                      expression: '.*(?P<status_code>[0-9]{3})\\s.*'
                   - regex:
-                      expression: '.*(?:userId|user.id|X-User-Id)[:=]\s*(?P<user_id>[a-zA-Z0-9\-]+).*'
-                  - regex:
-                      expression: '.*(?:sessionId|session.id|X-Session-Id)[:=]\s*(?P<session_id>[a-zA-Z0-9\-]+).*'
-                  - regex:
-                      expression: '.*\s(?P<level>ERROR|WARN|INFO|DEBUG|TRACE)\s.*'
-                  - regex:
-                      expression: '.*status[:=]\s*(?P<status_code>[0-9]+).*'
-                  - regex:
-                      expression: '.*method[:=]\s*(?P<http_method>[A-Z]+).*'
-                  - regex:
-                      expression: '.*uri[:=]\s*(?P<uri>[^\s]+).*'
+                      expression: '.*HTTP\\s(?P<http_method>[A-Z]+)\\s"(?P<uri>[^"]+)".*'
                   - labels:
                       trace_id:
-                      span_id:
-                      request_id:
-                      user_id:
-                      session_id:
                       level:
                       status_code:
                       http_method:
