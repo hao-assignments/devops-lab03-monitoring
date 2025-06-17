@@ -69,10 +69,8 @@ prometheus:
     service:
       type: LoadBalancer
     extraArgs:
-      web.enable-lifecycle: true
-      storage.tsdb.retention.time: 15d
-    global:
-      evaluation_interval: 15s
+      web.enable-lifecycle: ""
+      storage.tsdb.retention.time: "15d"
   serverFiles:
     prometheus.yml:
       global:
@@ -99,6 +97,7 @@ prometheus:
           metrics_path: /actuator/prometheus
           static_configs:
             - targets: ['vets-service.petclinic-prod.svc.cluster.local:8083']
+    alerts: {}
     rules:
       petclinic.rules.yml: |
         groups:
