@@ -68,12 +68,11 @@ prometheus:
   server:
     service:
       type: LoadBalancer
-  alertmanager:
-    enabled: true
-    service:
-      type: LoadBalancer
   serverFiles:
     prometheus.yml:
+      global:
+        scrape_interval: 5s      # Scrape mỗi 5s thay vì 15s
+        evaluation_interval: 5s  # Check rules mỗi 5s
       rule_files:
         - "alert_rules.yml"
       scrape_configs:
@@ -81,6 +80,7 @@ prometheus:
           static_configs:
             - targets: ['localhost:9090']
         - job_name: api-gateway
+          scrape_interval: 5s    # Riêng api-gateway scrape 5s
           metrics_path: /actuator/prometheus
           static_configs:
             - targets: ['api-gateway.petclinic-prod.svc.cluster.local:8080']
@@ -99,20 +99,38 @@ prometheus:
     alert_rules.yml:
       groups:
         - name: petclinic-prod-alerts
+          interval: 5s  # Evaluate rules mỗi 5s
           rules:
             - alert: HighErrorRate
               expr: increase(http_server_requests_seconds_count{status=~"4..|5.."}[30s]) > 10
-              for: 0s
+              for: 0s  # Trigger ngay lập tức
               labels:
                 severity: critical
                 environment: prod
                 service: "{{ $labels.job }}"
               annotations:
-                summary: "CRITICAL: High error rate detected in production"
-                description: "Service {{ $labels.job }} has more than 10 error requests in the last 30 seconds. Current count: {{ $value }}"
-                trace_query: 'http_server_requests_seconds_count{job="{{ $labels.job }}", status=~"4..|5.."}'
-                log_query: '{namespace="petclinic-prod", container="{{ $labels.job }}"} |~ "ERROR|WARN"'
-                runbook_url: "https://runbooks.petclinic.com/alerts/high-error-rate"
+                summary: "CRITICAL: More than 10 errors in 30 seconds"
+                description: "Service {{ $labels.job }} has {{ $value }} errors in the last 30 seconds"
+            - alert: HighErrorRatePercentage
+              expr: (rate(http_server_requests_seconds_count{status=~"4..|5.."}[1m]) / rate(http_server_requests_seconds_count[1m])) * 100 > 10
+              for: 1m
+              labels:
+                severity: warning  
+                environment: prod
+                service: "{{ $labels.job }}"
+              annotations:
+                summary: "High error rate percentage detected"
+                description: "Service {{ $labels.job }} has {{ $value | humanizePercentage }} error rate"
+            - alert: AnyErrorDetected
+              expr: increase(http_server_requests_seconds_count{status=~"4..|5.."}[1m]) > 0
+              for: 0s
+              labels:
+                severity: info
+                environment: prod
+                service: "{{ $labels.job }}"
+              annotations:
+                summary: "Errors detected in production (testing alert)"
+                description: "Service {{ $labels.job }} has {{ $value }} error(s) in the last minute"
             - alert: ServiceDown
               expr: up == 0
               for: 30s
