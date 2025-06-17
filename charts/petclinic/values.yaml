@@ -101,11 +101,6 @@ prometheus:
       type: ClusterIP
   serverFiles:
     prometheus.yml:
-      global:
-        scrape_interval: 15s
-        evaluation_interval: 15s
-        external_labels:
-          environment: '{{ .Values.namespace | replace "petclinic-" "" }}'
       rule_files:
         - "alert_rules.yml"
       scrape_configs:

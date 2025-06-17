@@ -72,11 +72,6 @@ prometheus:
     enabled: true
   serverFiles:
     prometheus.yml:
-      global:
-        scrape_interval: 15s
-        evaluation_interval: 15s
-        external_labels:
-          environment: 'dev'
       rule_files:
         - "alert_rules.yml"
       scrape_configs:

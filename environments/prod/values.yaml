@@ -74,11 +74,6 @@ prometheus:
       type: LoadBalancer
   serverFiles:
     prometheus.yml:
-      global:
-        scrape_interval: 15s
-        evaluation_interval: 15s
-        external_labels:
-          environment: 'prod'
       rule_files:
         - "alert_rules.yml"
       scrape_configs:
@@ -215,6 +210,9 @@ loki-stack:
             url: http://tracing-server.petclinic-prod.svc.cluster.local:9411
             access: proxy
   loki:
+    persistence:
+      enabled: true
+      size: 5Gi
     config:
       schema_config:
         configs:
@@ -227,20 +225,6 @@ loki-stack:
               period: 24h
       server:
         http_listen_port: 3100
-      ingester:
-        lifecycler:
-          address: 127.0.0.1
-          ring:
-            kvstore:
-              store: inmemory
-            replication_factor: 1
-      storage_config:
-        boltdb_shipper:
-          active_index_directory: /loki/boltdb-shipper-active
-          cache_location: /loki/boltdb-shipper-cache
-          shared_store: filesystem
-        filesystem:
-          directory: /loki/chunks
   promtail:
     enabled: true
     config:
