@@ -68,6 +68,8 @@ prometheus:
   server:
     service:
       type: ClusterIP
+  alertmanager:
+    enabled: false
   serverFiles:
     prometheus.yml:
       scrape_configs:
@@ -90,24 +92,75 @@ prometheus:
           metrics_path: /actuator/prometheus
           static_configs:
             - targets: ['vets-service.petclinic-dev.svc.cluster.local:8083']
-      rule_files:
-        - /etc/prometheus/rules/petclinic.rules.yml
-    rules:
-      petclinic.rules.yml: |-
-        groups:
-          - name: petclinic-alerts
-            rules:
-              - alert: High5xxRate
-                expr: increase(http_server_requests_seconds_count{status=~"5.."}[5m]) > 10
-                for: 1m
-                labels:
-                  severity: warning
-                annotations:
-                  summary: "High 5xx error rate"
-                  description: "More than 10 5xx requests in the last 5 minutes"
+    alerts:
+      groups:
+        - name: petclinic-dev-alerts
+          rules:
+            - alert: ServiceDown
+              expr: up == 0
+              for: 5m
+              labels:
+                severity: info
+                environment: dev
+              annotations:
+                summary: "Service is down in development"
+                description: "Service {{ $labels.job }} has been down for more than 5 minutes"
 
 loki-stack:
   grafana:
     enabled: true
     service:
       type: ClusterIP
+    adminPassword: dev123
+    datasources:
+      datasources.yaml:
+        apiVersion: 1
+        datasources:
+          - name: Prometheus
+            type: prometheus
+            url: http://prometheus-server.petclinic-dev.svc.cluster.local
+            access: proxy
+          - name: Loki
+            type: loki
+            url: http://loki.petclinic-dev.svc.cluster.local:3100
+            access: proxy
+  loki:
+    config:
+      schema_config:
+        configs:
+          - from: 2020-10-24
+            store: boltdb-shipper
+            object_store: filesystem
+            schema: v11
+            index:
+              prefix: dev_index_
+              period: 24h
+      server:
+        http_listen_port: 3100
+  promtail:
+    enabled: true
+    config:
+      clients:
+        - url: http://loki.petclinic-dev.svc.cluster.local:3100/loki/api/v1/push
+      scrape_configs:
+        - job_name: kubernetes-pods
+          kubernetes_sd_configs:
+            - role: pod
+              namespaces:
+                names: ['petclinic-dev']
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_pod_container_name]
+              target_label: container
+            - source_labels: [__meta_kubernetes_namespace]
+              target_label: namespace
+            - source_labels: [__meta_kubernetes_pod_name]
+              target_label: pod
+          pipeline_stages:
+            - match:
+                selector: '{container=~".*petclinic.*"}'
+                stages:
+                  - regex:
+                      expression: '.*traceId=(?P<trace_id>[a-f0-9]+).*'
+                  - labels:
+                      trace_id:
+                      environment: dev

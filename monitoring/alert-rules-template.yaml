@@ -1,0 +1,48 @@
+groups:
+  - name: petclinic-common-alerts
+    rules:
+      - alert: HighErrorRate
+        expr: increase(http_server_requests_seconds_count{status=~"4..|5.."}[30s]) > {{ .Values.alerting.errorThreshold | default 10 }}
+        for: {{ .Values.alerting.errorDuration | default "0s" }}
+        labels:
+          severity: {{ .Values.alerting.errorSeverity | default "critical" }}
+          environment: {{ .Values.environment }}
+          service: "{{ "{{" }} $labels.job {{ "}}" }}"
+        annotations:
+          summary: "High error rate detected in {{ .Values.environment }}"
+          description: "Service {{ "{{" }} $labels.job {{ "}}" }} has {{ "{{" }} $value {{ "}}" }} error requests in the last 30 seconds (threshold: {{ .Values.alerting.errorThreshold | default 10 }})"
+          runbook_url: "https://runbooks.petclinic.com/high-error-rate"
+          
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_server_requests_seconds_bucket[5m])) > {{ .Values.alerting.responseTimeThreshold | default 2 }}
+        for: {{ .Values.alerting.responseTimeDuration | default "2m" }}
+        labels:
+          severity: {{ .Values.alerting.responseTimeSeverity | default "warning" }}
+          environment: {{ .Values.environment }}
+          service: "{{ "{{" }} $labels.job {{ "}}" }}"
+        annotations:
+          summary: "High response time in {{ .Values.environment }}"
+          description: "95th percentile response time is {{ "{{" }} $value {{ "}}" }}s for service {{ "{{" }} $labels.job {{ "}}" }}"
+          runbook_url: "https://runbooks.petclinic.com/high-response-time"
+          
+      - alert: ServiceDown
+        expr: up == 0
+        for: {{ .Values.alerting.downDuration | default "30s" }}
+        labels:
+          severity: {{ .Values.alerting.downSeverity | default "critical" }}
+          environment: {{ .Values.environment }}
+        annotations:
+          summary: "Service {{ "{{" }} $labels.job {{ "}}" }} is down in {{ .Values.environment }}"
+          description: "Service {{ "{{" }} $labels.job {{ "}}" }} has been unreachable for more than {{ .Values.alerting.downDuration | default "30s" }}"
+          runbook_url: "https://runbooks.petclinic.com/service-down"
+          
+      - alert: HighMemoryUsage
+        expr: (container_memory_usage_bytes{container!="POD"} / container_spec_memory_limit_bytes) * 100 > {{ .Values.alerting.memoryThreshold | default 80 }}
+        for: {{ .Values.alerting.memoryDuration | default "5m" }}
+        labels:
+          severity: {{ .Values.alerting.memorySeverity | default "warning" }}
+          environment: {{ .Values.environment }}
+        annotations:
+          summary: "High memory usage in {{ .Values.environment }}"
+          description: "Memory usage is {{ "{{" }} $value {{ "}}" }}% in pod {{ "{{" }} $labels.pod {{ "}}" }}"
+          runbook_url: "https://runbooks.petclinic.com/high-memory-usage"

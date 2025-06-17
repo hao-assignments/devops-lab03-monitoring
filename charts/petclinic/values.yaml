@@ -97,33 +97,69 @@ prometheus:
   server:
     persistentVolume:
       enabled: false
+    service:
+      type: ClusterIP
+  serverFiles:
+    prometheus.yml:
+      global:
+        scrape_interval: 15s
+        evaluation_interval: 15s
+      scrape_configs:
+        - job_name: prometheus
+          static_configs:
+            - targets: ['localhost:9090']
 
 loki-stack:
   promtail:
     enabled: true
     config:
-      snippets:
-        extraRelabelConfigs:
-          - action: replace
-            source_labels: [__meta_kubernetes_pod_name]
-            target_label: pod
-          - action: replace
-            source_labels: [__meta_kubernetes_namespace]
-            target_label: namespace
-          - action: replace
-            source_labels: [__meta_kubernetes_pod_container_name]
-            target_label: container
       clients:
         - url: http://{{ .Release.Name }}-loki:3100/loki/api/v1/push
+      scrape_configs:
+        - job_name: kubernetes-pods
+          kubernetes_sd_configs:
+            - role: pod
+              namespaces:
+                names: ['{{ .Values.namespace }}']
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+              action: keep
+              regex: true
+            - source_labels: [__meta_kubernetes_pod_container_name]
+              target_label: container
+            - source_labels: [__meta_kubernetes_namespace]
+              target_label: namespace
+            - source_labels: [__meta_kubernetes_pod_name]
+              target_label: pod
+          pipeline_stages:
+            - match:
+                selector: '{container=~".*petclinic.*"}'
+                stages:
+                  - regex:
+                      expression: '.*traceId=(?P<trace_id>[a-f0-9]+).*'
+                  - labels:
+                      trace_id:
   loki:
     persistence:
       enabled: true
       size: 5Gi
+    config:
+      schema_config:
+        configs:
+          - from: 2020-10-24
+            store: boltdb-shipper
+            object_store: filesystem
+            schema: v11
+            index:
+              prefix: "{{ .Values.namespace }}_index_"
+              period: 24h
+      server:
+        http_listen_port: 3100
   grafana:
     enabled: true
     adminPassword: admin
     service:
-      type: LoadBalancer
+      type: ClusterIP
     datasources:
       datasources.yaml:
         apiVersion: 1
@@ -137,21 +173,60 @@ loki-stack:
             type: loki
             url: http://{{ .Release.Name }}-loki:3100
             access: proxy
+          - name: Jaeger
+            type: jaeger
+            url: http://tracing-server.{{ .Values.namespace }}.svc.cluster.local:9411
+            access: proxy
     dashboardProviders:
       dashboardproviders.yaml:
         apiVersion: 1
         providers:
-          - name: 'default'
+          - name: 'petclinic'
             orgId: 1
-            folder: ''
+            folder: 'PetClinic'
             type: file
             disableDeletion: false
             editable: true
             options:
-              path: /var/lib/grafana/dashboards/default
+              path: /var/lib/grafana/dashboards/petclinic
     dashboards:
-      default:
-        petclinic-dashboard:
-          gnetId: 6756
-          revision: 3
-          datasource: Prometheus
+      petclinic:
+        service-overview:
+          json: |
+            {
+              "dashboard": {
+                "title": "PetClinic Services Overview",
+                "panels": [
+                  {
+                    "title": "Request Rate",
+                    "type": "graph",
+                    "targets": [
+                      {
+                        "expr": "rate(http_server_requests_seconds_count[5m])",
+                        "legendFormat": "{{ "{{" }} job {{ "}}" }} - {{ "{{" }} status {{ "}}" }}"
+                      }
+                    ]
+                  },
+                  {
+                    "title": "Error Rate",
+                    "type": "stat",
+                    "targets": [
+                      {
+                        "expr": "rate(http_server_requests_seconds_count{status=~\"4..|5..\"}[5m])",
+                        "legendFormat": "Errors/sec"
+                      }
+                    ]
+                  },
+                  {
+                    "title": "Response Time",
+                    "type": "graph",
+                    "targets": [
+                      {
+                        "expr": "histogram_quantile(0.95, rate(http_server_requests_seconds_bucket[5m]))",
+                        "legendFormat": "95th percentile"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }

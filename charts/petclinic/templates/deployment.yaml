@@ -8,6 +8,8 @@ metadata:
   namespace: {{ $.Values.namespace }}
   labels:
     app: {{ $name }}
+    version: {{ $service.version | default "latest" }}
+    environment: {{ $.Values.namespace | replace "petclinic-" "" }}
 spec:
   replicas: {{ $service.replicas | default 1 }}
   selector:
@@ -17,28 +19,50 @@ spec:
     metadata:
       labels:
         app: {{ $name }}
+        version: {{ $service.version | default "latest" }}
+        environment: {{ $.Values.namespace | replace "petclinic-" "" }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "{{ $service.containerPort }}"
+        prometheus.io/path: "/actuator/prometheus"
     spec:
       containers:
         - name: {{ $name }}
           image: {{ $service.image }}
           ports:
             - containerPort: {{ $service.containerPort }}
+              name: http
           resources:
             {{- toYaml $service.resources | nindent 12 }}
-          {{- if $service.useEureka }}
           env:
+            - name: ENVIRONMENT
+              value: {{ $.Values.namespace | replace "petclinic-" "" }}
+            - name: SERVICE_NAME
+              value: {{ $name }}
+            - name: NAMESPACE
+              value: {{ $.Values.namespace }}
+            {{- if $service.useEureka }}
             - name: EUREKA_INSTANCE_HOSTNAME
               value: {{ $name }}
-          {{- end }}
-          {{- with $service.env }}
-          env:
+            - name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+              value: http://discovery-server.{{ $.Values.namespace }}.svc.cluster.local:8761/eureka
+            {{- end }}
+            {{- with $service.env }}
             {{- toYaml . | nindent 12 }}
-          {{- end }}
+            {{- end }}
           readinessProbe:
             httpGet:
               path: {{ $service.healthPath | default "/actuator/health" }}
               port: {{ $service.containerPort }}
-            initialDelaySeconds: 5
-            periodSeconds: 5
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: {{ $service.healthPath | default "/actuator/health" }}
+              port: {{ $service.containerPort }}
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
 {{- end }}
 {{- end }}
