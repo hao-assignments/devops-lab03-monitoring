@@ -1,22 +1,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: petclinic-prod
+  name: prometheus-rules
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: https://github.com/hao-assignments/devops-lab03-monitoring.git
     targetRevision: HEAD
-    path: charts/petclinic
-    helm:
-      valueFiles:
-        - ../../environments/prod/values.yaml
-      parameters:
-        - name: prometheus.enabled
-          value: "false"
-        - name: loki-stack.enabled
-          value: "false"
+    path: manifests/prometheus-rules
   destination:
     server: https://kubernetes.default.svc
     namespace: petclinic-prod
@@ -24,5 +16,3 @@ spec:
     automated:
       prune: true
       selfHeal: true
-    syncOptions:
-    - CreateNamespace=true

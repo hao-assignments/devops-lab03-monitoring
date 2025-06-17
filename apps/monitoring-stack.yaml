@@ -1,0 +1,52 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring-stack
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    targetRevision: 58.5.3
+    chart: kube-prometheus-stack
+    helm:
+      values: |
+        prometheus:
+          service:
+            type: LoadBalancer
+          prometheusSpec:
+            evaluationInterval: 15s
+            scrapeInterval: 15s
+            retention: "15d"
+            ruleSelectorNilUsesHelmValues: false
+            serviceMonitorSelectorNilUsesHelmValues: false
+            additionalScrapeConfigs:
+              - job_name: api-gateway
+                metrics_path: /actuator/prometheus
+                static_configs:
+                  - targets: ['api-gateway.petclinic-prod.svc.cluster.local:8080']
+              - job_name: customers-service
+                metrics_path: /actuator/prometheus
+                static_configs:
+                  - targets: ['customers-service.petclinic-prod.svc.cluster.local:8081']
+              - job_name: visits-service
+                metrics_path: /actuator/prometheus
+                static_configs:
+                  - targets: ['visits-service.petclinic-prod.svc.cluster.local:8082']
+              - job_name: vets-service
+                metrics_path: /actuator/prometheus
+                static_configs:
+                  - targets: ['vets-service.petclinic-prod.svc.cluster.local:8083']
+        grafana:
+          service:
+            type: LoadBalancer
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: petclinic-prod
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
