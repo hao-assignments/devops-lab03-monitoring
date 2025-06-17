@@ -68,15 +68,8 @@ prometheus:
   server:
     service:
       type: LoadBalancer
-    extraArgs:
-      web.enable-lifecycle: ""
-      storage.tsdb.retention.time: "15d"
   serverFiles:
     prometheus.yml:
-      global:
-        evaluation_interval: 15s
-      rule_files:
-        - "/etc/prometheus/rules/*.yml"
       scrape_configs:
         - job_name: prometheus
           static_configs:
@@ -97,9 +90,10 @@ prometheus:
           metrics_path: /actuator/prometheus
           static_configs:
             - targets: ['vets-service.petclinic-prod.svc.cluster.local:8083']
-    alerts: {}
+      rule_files:
+        - /etc/prometheus/rules/petclinic.rules.yml
     rules:
-      petclinic.rules.yml: |
+      petclinic.rules.yml: |-
         groups:
           - name: petclinic-alerts
             rules:
