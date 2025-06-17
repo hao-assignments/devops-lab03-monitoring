@@ -173,8 +173,8 @@ loki-stack:
                 - name: "Request ID"
                   matcherRegex: "request_id=(\\w+)"
                   url: "/explore?orgId=1&left=%5B%22now-1h%22,%22now%22,%22Loki%22,%7B%22expr%22:%22%7Brequest_id%3D%5C%22$${__value.raw}%5C%22%7D%22%7D%5D"
-          - name: Jaeger
-            type: jaeger
+          - name: Zipkin
+            type: zipkin
             url: http://tracing-server.petclinic-staging.svc.cluster.local:9411
             access: proxy
   loki:
