@@ -91,9 +91,9 @@ prometheus:
           static_configs:
             - targets: ['vets-service.petclinic-prod.svc.cluster.local:8083']
       rule_files:
-        - /etc/prometheus/rules/petclinic.rules.yml
+        - /etc/prometheus/rules/*.yml
     rules:
-      petclinic.rules.yml: |-
+      petclinic.rules.yml: |
         groups:
           - name: petclinic-alerts
             rules:
